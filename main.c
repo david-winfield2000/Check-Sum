@@ -47,15 +47,15 @@ int getPadding(int length, int bit) {
 }
 
 char *formatArray(FILE *file, char *input, int bitsize) {
-    fseek(file, 0, SEEK_END);
-    int length = ftell(file);
-    rewind(file);
+    char c;
+    int length = 0;
 
-    printf("File length: %d\n", length);
-
-    // Resize input array then fill with everything in the file 
-    input = (char *)malloc(length * sizeof(char));
-    fread(input, length, 1, file);
+    while ((c = fgetc(file)) != EOF) {
+        if (iscntrl(c))
+            continue;
+        input[length++] = c;
+        input = realloc(input, length + 1);
+    }
 
     input[length] = '\0';
 
