@@ -4,12 +4,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.Principal;
 import java.util.Arrays;
 
-import javax.swing.plaf.synth.SynthStyleFactory;
-
-
+/*
+ * CIS3360 - Spring 2018
+ * Security in Computing - Assignment 2
+ * Submitted by: <Christopher Narciso> <Omar Padilla>
+ * Description: Program that calculates a checksum based on bytes.
+ * Every 1 byte for 8 bit, every two for 16 bit, and every 4 for 32 bit.
+ */
 public class Checksum {
 
     private static final int[] VALID_BIT_SIZES = {8, 16, 32};
@@ -44,21 +47,17 @@ public class Checksum {
 
         String input = null;
         try {
-            input = new String(Files.readAllBytes(filePath));
+            input = new String(Files.readString(filePath));
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
         }
 
-        System.out.println("Input string: " + input);
+        System.out.println("Input: " + input);
 
         byte[] adjustedBytes = getAdjustedByteArray(input, checkSumSize);
-
-        String newString = new String(adjustedBytes);
-        System.out.println("Byte array: " + newString);
-
-
         int checksum = checksum(adjustedBytes, checkSumSize);
+        System.out.println("Checksum: " + checksum);
         System.out.printf("\n%s\n%2d bit checksum is %8x for all %4d chars\n",
                 formattedStringOutput(getAdjustedString(input, checkSumSize)), checkSumSize, checksum, adjustedBytes.length);
 
@@ -70,9 +69,7 @@ public class Checksum {
      * @return byte[] with appropriate padding if applicable. Padding with X (88 ASCII)
      */
     private static byte[] getAdjustedByteArray(String in, int bit) {
-        int originalSize = in.getBytes().length;
-        int padding = getPadding(originalSize, bit);
-        int newSize;
+        int originalSize = in.getBytes().length, padding = getPadding(originalSize, bit), newSize;
 
         newSize = originalSize + padding;
         byte[] temp = new byte[newSize];
