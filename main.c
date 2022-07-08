@@ -1,27 +1,164 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
+#include <stdint.h>
 #include <string.h>
 
-char *formatArray(FILE *file, char *input, int bitbitsize);
+// // Function that prints 80 characters per line
+// void print80(char *str)
+// {
+// 	for (int i = 0; i < strlen(str); i++)
+// 	{
+// 		if (i % 80 == 0)
+// 			printf("\n");
+// 		printf("%c",str[i]);
+// 	}
+// }
 
-int getPadding(int lengthOriginal, int bit);
+// // Calculate 8 bit checksum from the input string
+// unsigned long int calc8bit(char *input)
+// {
+// 	int result = 0;
+// 	for (int i = 0; i < strlen(input); i++)
+// 	{
+// 		result += input[i];
+// 	}
 
-int checksum(char *input, int bit);
-int checksum8(char *input);
+// 	return result;
+// }
 
-int main(int argc, char const *argv[])
+// // Calculate 16 bit checksum from the input string
+// unsigned long int calc16bit(char *input)
+// {
+// 	int res16bit = 0;
+// 	for (int i = 0; i < strlen(input);)
+// 	{
+// 		res16bit += input[i] << 8;
+// 		res16bit += (input[i + 1]);
+// 		i+=2;
+// 	}
+
+// 	return res16bit;
+// }
+
+// // Calculate 32 bit checksum from the input string
+// unsigned long int calc32bit(char *input)
+// {
+// 	unsigned long int res32bit = 0;
+// 	for (int i = 0; i < strlen(input);)
+// 	{
+// 		res32bit += input[i] << 24;
+// 		res32bit += (input[i + 1]) << 16;
+// 		res32bit += (input[i + 2]) << 8;
+// 		res32bit += (input[i + 3]);
+// 		i+=4;
+// 	}
+	
+// 	return res32bit;
+// }
+
+void printAnswer(char *input, int bitsize, int ans) {
+
+	printf("%s\n", input);
+	printf("%2d bit checksum is %8lx for all %4d chars\n", bitsize, ans, (int)strlen(input));
+
+	return;
+}
+
+char *readFile(FILE *file, char *input) {
+	char c;
+    int length = 0;
+
+    while ((c = fgetc(file)) != EOF) {
+        input[length++] = c;
+        input = realloc(input, length + 1);
+    }
+
+	input[length] = '\0';
+
+	return input;
+}
+
+void checksum8(char *input) {
+	int ans = 0;
+
+	for (int i = 0; i < strlen(input); i++)
+	{
+		ans += input[i];
+	}
+
+	printAnswer(input, 8, ans & 0xFF);
+
+	return;
+}
+
+void checksum16(char *input) {
+
+	int length = strlen(input); 
+
+	// Pad with X as necessary
+	if (strlen(input) % 2) {
+		input[length++] = 'X';
+        input = realloc(input, length + 1);
+	}
+
+	// Add terminating character to end of string
+	input[length] = '\0';
+
+	// printf("Padded input string: %s\n", input);
+
+	int ans = 0;
+	for (int i = 0; i < strlen(input); i)
+	{
+		ans += input[i] << 8;
+		ans += (input[i + 1]);
+		i += 2;
+	}
+
+	printAnswer(input, 16, ans & 0xFFFF);
+
+	return;
+}
+
+void checksum32(char *input) {
+
+	// Pad with multiple X's if necessary
+	while (strlen(input) % 4) {
+		input[strlen(input)] = 'X';
+		input = malloc(strlen(input) + 1);
+	}
+	// Add terminating character to end of string
+	input[strlen(input)] = '\0';
+
+	int ans = 0;
+
+	for (int i = 0; i < strlen(input); i++)
+	{
+		ans += input[i] << 24;
+		ans += (input[i + 1]) << 16;
+		ans += (input[i + 2]) << 8;
+		ans += (input[i + 3]);
+		i += 4;
+	}
+
+	printAnswer(input, 32, ans & 0xFFFFFFFF);
+	
+	return;
+}
+
+int main(int argc, char **argv)
 {
+	// ---------------- Parse input file ----------------
+
     // Open file
     FILE *file;
     file = fopen(argv[1], "r");
 
     if (file == NULL) {
-        fprintf(stderr, "File could not be opened");
+        fprintf(stderr, "File could not be opened\n");
         return 0;
     }
 
-    // Read second argument to get bit bitsize
+	// Read second argument to get bit bitsize
     int bitsize = atoi(argv[2]);
 
     // Force user to enter correct bitsize
@@ -30,108 +167,33 @@ int main(int argc, char const *argv[])
         return 0;
     }
 
-    // Create input character array
-    char *input = malloc(1);
+	// Create character array and create space for first character
+	char *input;
+	input = malloc(1);
 
-    // Read all bytes in the file, store as a character array
-    input = formatArray(file, input, bitsize);
+	// Fill character array with data from input file
+	input = readFile(file, input);
+	// printf("Input string: %s\n", input);
 
-    // Calculate checksum
-    int sum = checksum(input, bitsize);
+	// Close input file
+	fclose(file);
 
-    // Print statement
-    printf("%2d bit checksum is %8lx for all %4d chars\n", bitsize, sum, strlen(input));
+	// ---------------- Calculate checksum ----------------
 
-    // Close file
-    fclose(file);
+	switch (bitsize)
+	{
+	case 8:
+		checksum8(input);
+		break;
+	case 16:
+		checksum16(input);
+		break;
+	case 32:
+		checksum32(input);
+		break;
+	default:
+		break;
+	}
 
-    return 0;
+	return 0;
 }
-
-int getPadding(int lengthOriginal, int bit) {
-    
-    switch (bit)
-    {
-    case 8:
-        return 0;
-        break;
-    case 16:
-        if (lengthOriginal % 2)
-            return 1;
-        break;
-    case 32:
-        int i = 0;
-        while (lengthOriginal % 4)
-            i++;
-        return i;
-    default:
-        break;
-    }
-}
-
-char *formatArray(FILE *file, char *input, int bitbitsize) {
-    char c;
-    int length = 0;
-
-    while ((c = fgetc(file)) != EOF) {
-        input[length++] = c;
-        input = realloc(input, length + 1);
-    }
-
-    input[length] = '\0';
-
-    // ---------------------- End of parsing file -------------------- //
-
-    int padding = getPadding(length, bitbitsize);
-    int newbitsize;
-
-    newbitsize = length + padding;
-
-    if (padding > 0) {
-        for (int j = length; j < newbitsize; j++) {
-            input = realloc(input, length++ + 1);
-            input[j] = 'X';
-        }
-    }
-
-    // input[length] = '\0';
-
-    // printf("New string: %s\n", input);
-    return input;
-}
-
-int checksum(char *input, int bit) {
-
-    int sum;
-    switch (bit) {
-        case 8:
-            sum = checksum8(input);
-            break;
-        // case 16:
-        //     return checksum16(input);
-        //     break;
-        // case 32:
-        //     return checksum32(input);
-        //     break;
-    }
-
-    return sum & 0xFF;
-}
-
-int checksum8(char *input) {
-    int check = 0;
-
-    for (int i = 0; i < strlen(input); i++) {
-        check += input[i];
-    }
-
-    return check;
-}
-
-// char *checksum16(char *input) {
-
-// }
-
-// char *checksum32(char *input) {
-    
-// }
